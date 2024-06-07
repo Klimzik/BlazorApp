@@ -1,0 +1,106 @@
+﻿@page "/weather"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>This component demonstrates showing data.</p>
+<div style="margin-bottom: 5px">
+    <button class="btn btn-primary" @onclick="FilterWeather">Filter</button>
+    <button class="btn btn-primary" @onclick="Restore">Restore</button>
+</div>
+<input class="form-control" @oninput="@Input" />
+
+@if (forecasts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temp. (C)</th>
+                <th>Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p role="status">Number of warm days: @warmDays</p>
+
+
+}
+
+@code {
+    private WeatherForecast[]? forecasts;
+    private WeatherForecast[]? forecastsOriginal;
+    private int warmDays = 0;
+    private int temeprature = 15;
+
+    private void FilterWeather()
+    {
+        forecasts = forecasts.Where(weather => weather.TemperatureC > temeprature).ToArray();
+    }
+
+    private void Restore()
+    {
+        forecasts = forecastsOriginal;
+    }
+
+    void Input(ChangeEventArgs arg)
+    {
+        var input = arg.Value.ToString();
+        if(input == "")
+        {
+            forecasts = forecastsOriginal;
+            return;
+        }
+        forecasts = forecasts.Where(weather => weather.Summary.Contains(input)).ToArray();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate asynchronous loading to demonstrate streaming rendering
+        await Task.Delay(500);
+
+        var startDate = DateOnly.FromDateTime(DateTime.Now);
+        var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
+        forecasts = Enumerable.Range(1, 10).Select(index => new WeatherForecast
+        {
+            Date = startDate.AddDays(index),
+            TemperatureC = Random.Shared.Next(-20, 55),
+            Summary = summaries[Random.Shared.Next(summaries.Length)]
+        }).ToArray();
+        forecastsOriginal = forecasts;
+        foreach(var weather in forecasts)
+        {
+            if(weather.TemperatureC > temeprature)
+            {
+                warmDays++;
+            }
+        }
+    }
+
+    private class WeatherForecast
+    {
+        public DateOnly Date { get; set; }
+        public int TemperatureC { get; set; }
+        public string? Summary { get; set; }
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    }
+}
